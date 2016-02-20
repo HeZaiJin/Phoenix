@@ -6,6 +6,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.view.MotionEventCompat;
 import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
@@ -24,6 +25,8 @@ import com.yalantis.phoenix.util.Utils;
 import java.security.InvalidParameterException;
 
 public class PullToRefreshView extends ViewGroup {
+
+    private static final String TAG = "PullToRefreshView" ;
 
     private static final int DRAG_MAX_DISTANCE = 120;
     private static final float DRAG_RATE = .5f;
@@ -136,7 +139,6 @@ public class PullToRefreshView extends ViewGroup {
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
-
         if (!isEnabled() || canChildScrollUp() || mRefreshing) {
             return false;
         }
@@ -163,9 +165,12 @@ public class PullToRefreshView extends ViewGroup {
                     return false;
                 }
                 final float yDiff = y - mInitialMotionY;
-                if (yDiff > mTouchSlop && !mIsBeingDragged) {
+                Log.d(TAG,"yDiff = "+yDiff+". mTouchSlop ="+mTouchSlop);
+                mIsBeingDragged = true;
+
+               /* if (yDiff > mTouchSlop && !mIsBeingDragged) {
                     mIsBeingDragged = true;
-                }
+                }*/
                 break;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
@@ -200,19 +205,20 @@ public class PullToRefreshView extends ViewGroup {
                 final float yDiff = y - mInitialMotionY;
                 final float scrollTop = yDiff * DRAG_RATE;
                 mCurrentDragPercent = scrollTop / mTotalDragDistance;
-                if (mCurrentDragPercent < 0) {
+                Log.d(TAG,"scrollTop ="+scrollTop+", mCurrentDragPercent "+mCurrentDragPercent);
+                /*if (mCurrentDragPercent < 0) {
                     return false;
-                }
+                }*/
                 float boundedDragPercent = Math.min(1f, Math.abs(mCurrentDragPercent));
                 float extraOS = Math.abs(scrollTop) - mTotalDragDistance;
                 float slingshotDist = mTotalDragDistance;
-                float tensionSlingshotPercent = Math.max(0,
-                        Math.min(extraOS, slingshotDist * 2) / slingshotDist);
-                float tensionPercent = (float) ((tensionSlingshotPercent / 4) - Math.pow(
-                        (tensionSlingshotPercent / 4), 2)) * 2f;
+                float tensionSlingshotPercent = Math.max(0, Math.min(extraOS, slingshotDist * 2) / slingshotDist);
+                float tensionPercent = (float) ((tensionSlingshotPercent / 4) - Math.pow((tensionSlingshotPercent / 4), 2)) * 2f;
                 float extraMove = (slingshotDist) * tensionPercent / 2;
                 int targetY = (int) ((slingshotDist * boundedDragPercent) + extraMove);
-
+                Log.d(TAG,"scrollTop ="+scrollTop+", mCurrentDragPercent "+mCurrentDragPercent+" , boundedDragPercent ="+boundedDragPercent+", extraOS ="+extraOS);
+                Log.d(TAG,"slingshotDist ="+slingshotDist+", tensionSlingshotPercent ="+tensionSlingshotPercent+" , tensionPercent ="+tensionPercent);
+                Log.d(TAG,"extraMove = "+extraMove+", targetY ="+targetY);
                 mBaseRefreshView.setPercent(mCurrentDragPercent, true);
                 setTargetOffsetTop(targetY - mCurrentOffsetTop, true);
                 break;
